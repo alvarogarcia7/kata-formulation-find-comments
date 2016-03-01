@@ -1,0 +1,12 @@
+/target/
+.nrepl-port
+
+# lein files
+.lein-deps-sum
+.lein-plugins/
+.lein-failures
+
+
+# idea files
+.idea
+*.iml
