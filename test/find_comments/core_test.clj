@@ -30,5 +30,8 @@
       "./dev-resources/matching_at_multiple_levels/folder/file2.php"))
 
   (fact "only matches php files, not folders"
-    (find-php-files "./dev-resources/folder_matching_pattern/") => '()))
+    (find-php-files "./dev-resources/folder_matching_pattern/") => '())
+
+  (fact "only matches files with php extension"
+    (find-php-files "./dev-resources/bad_extension/") => '()))
 
