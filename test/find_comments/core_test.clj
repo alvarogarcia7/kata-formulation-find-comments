@@ -27,4 +27,8 @@
   (fact "multiple levels"
     (find-php-files "./dev-resources/matching_at_multiple_levels/") => '(
       "./dev-resources/matching_at_multiple_levels/file1.php"
-      "./dev-resources/matching_at_multiple_levels/folder/file2.php")))
+      "./dev-resources/matching_at_multiple_levels/folder/file2.php"))
+
+  (fact "only matches php files, not folders"
+    (find-php-files "./dev-resources/folder_matching_pattern/") => '()))
+
