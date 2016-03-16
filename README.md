@@ -4,6 +4,8 @@ This a formulation for your practice
 
 ## Tests
 
+This section is a copy [from here](https://github.com/alvarogarcia7/cli-app-base-clojure/blob/master/README.md#tests)
+
 ### Testing from the CLI
 
 ``lein midje :autotest``
