@@ -14,7 +14,15 @@
     (find-comments-in-file "./dev-resources/sample_code/file1.php") => '(
       "comment (single line)" 
       " Помогите!! Я в ловушке на этом языке. Можете ли вы перевести это?"
-      " another comment")))
+      " another comment"))
+
+  (fact "comments can contain comment tokens"
+    (find-comments-in-file "./dev-resources/inception/movie.php") => '(
+      "a comment"
+      "another comment"
+      "a comment // within a comment"
+      "we need to # go deeper"
+      "i heard // you like #s so i put a // in your # so you can // while you #")))
 
 (facts "about finding php files"
 
