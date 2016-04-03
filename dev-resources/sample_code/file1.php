@@ -4,7 +4,7 @@ other code //comment (single line)
 
 split('//');
 
-// Помогите!! Я в ловушке на этом языке. Можете ли вы перевести это?
+// lagun !! naiz hizkuntza bat ez dut ulertzen in Iruzkin bat harrapatuta !! lagundu nazakezu?
 complicatedFunctionCall();
 
 # another comment
