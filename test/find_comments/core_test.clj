@@ -13,7 +13,7 @@
   (fact "multiple comments in a file"
     (find-comments-in-file "./dev-resources/sample_code/file1.php") => '(
       "comment (single line)" 
-      " Помогите!! Я в ловушке на этом языке. Можете ли вы перевести это?"
+      " lagun !! naiz hizkuntza bat ez dut ulertzen in Iruzkin bat harrapatuta !! lagundu nazakezu?"
       " another comment"))
 
   (fact "comments can contain comment tokens"
