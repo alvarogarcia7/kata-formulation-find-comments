@@ -10,22 +10,32 @@
   false => false))
 
 (facts "about finding comments using regex"
-  (fact "without quotes or without trailing comment symbol returns nil"
-    (find-comment-using-regex " # test") => nil
-    (find-comment-using-regex "") => nil
-    (find-comment-using-regex "\"asd#\"") => nil)
-  (fact "with quotes return comment"
-    (find-comment-using-regex "\"a#\" #comment") => "comment"
-    (find-comment-using-regex "\"#\" #comment") => "comment"
-    (find-comment-using-regex "\"#\" # first # second") => " first # second"
-    (find-comment-using-regex "\"a#a\" \"b#b\" #comment") => "comment"
-    ;; also need to check single quotes
-    (find-comment-using-regex "'a#' #comment") => "comment"
-    (find-comment-using-regex "'#' #comment") => "comment"
-    (find-comment-using-regex "'#' # first # second") => " first # second"
-    (find-comment-using-regex "'a#a' 'b#b' #comment") => "comment"
-    (find-comment-using-regex "'a#a' 'b#b' #comment # and inner") => "comment # and inner"
-    ))
+  (let [fc-ur (partial find-comment-using-regex cs-regexs)]
+    (fact "without quotes or without trailing comment symbol returns nil"
+      (fc-ur " # test") => nil
+      (fc-ur "") => nil
+      (fc-ur "\"asd#\"") => nil)
+    (fact "with quotes return comment"
+      (fc-ur "\"a#\" #comment") => "comment"
+      (fc-ur "\"#\" #comment") => "comment"
+      (fc-ur "\"#\" # first # second") => " first # second"
+      (fc-ur "\"a#a\" \"b#b\" #comment") => "comment"
+      ;; also need to check single quotes
+      (fc-ur "'a#' #comment") => "comment"
+      (fc-ur "'#' #comment") => "comment"
+      (fc-ur "'#' # first # second") => " first # second"
+      (fc-ur "'a#a' 'b#b' #comment") => "comment"
+      (fc-ur "'a#a' 'b#b' #comment # and inner") => "comment # and inner")))
+
+(facts "about finding comments using split"
+  (let [fc-us (partial find-comment-using-split "#")]
+    (fact "one CS in line"
+      (fc-us "test #comment") => "comment"
+      (fc-us "#comment") => "comment")
+    (fact "multiple CS in line"
+      (fc-us "test #comment #with cs") => "comment #with cs")
+    (fact "different CS in line"
+      (fc-us "test #comment //with cs") => "comment //with cs")))
 
 (facts "about finding comments"
   #_(fact "multiple comments in a file"
