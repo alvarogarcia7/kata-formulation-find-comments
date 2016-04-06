@@ -37,6 +37,19 @@
     (fact "different CS in line"
       (fc-us "test #comment //with cs") => "comment //with cs")))
 
+(facts "about ensuring line contains CS"
+  (let [ensure (partial ensure-at-least-one-cs-in-line ["#" "//"])]
+    (fact "there is no CS in line"
+      (ensure "") => nil
+      (ensure "test") => nil
+      (ensure "more than one word") => nil
+      (ensure "only one slash /") => nil)
+    (fact "there is a CS in line"
+      (ensure "#") => true
+      (ensure "test #comment") => true
+      (ensure "// all is comment") => true
+      (ensure "many # CS // in one line") => true)))
+
 (facts "about finding comments"
   #_(fact "multiple comments in a file"
     (find-comments-in-file "./dev-resources/sample_code/file1.php") => '(

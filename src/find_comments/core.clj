@@ -76,8 +76,8 @@ Example regex (with comment symbol //):
 ;; Split part of solution
 
 (defn find-comment-using-split
-  [cs line]
-  (->> cs
+  [comment-symbol line]
+  (->> comment-symbol
        ;; Get index of our CS.
        ;; Here we know that index will be positive,
        ;; because line contains CS.
@@ -86,6 +86,22 @@ Example regex (with comment symbol //):
        inc
        ;; Take rest part as comment
        (.substring line)))
+
+(defn ensure-at-least-one-cs-in-line
+  [comment-symbols line]
+  (->> comment-symbols
+       ;; For each CS get it index in line
+       (map #(.indexOf line %))
+       ;; Some not negative,
+       ;; pos? doesn't work cause of 
+       ;; (= (pos? 0) false)
+       (some (complement neg?))))
+
+(defn find-comment-in-line
+  [line]
+  line)
+
+;; (find-comment-in-line "test # comment # second")
 
 ;; Main functions
 
