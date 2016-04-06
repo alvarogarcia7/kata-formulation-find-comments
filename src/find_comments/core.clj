@@ -77,15 +77,15 @@ Example regex (with comment symbol //):
 
 (defn find-comment-using-split
   [comment-symbol line]
-  (->> comment-symbol
-       ;; Get index of our CS.
-       ;; Here we know that index will be positive,
-       ;; because line contains CS.
-       (.indexOf line)
-       ;; There is inc cause of zero-based index
-       inc
-       ;; Take rest part as comment
-       (.substring line)))
+  ;; Take index of CS in line
+  (let [index (.indexOf line comment-symbol)
+        ;; And length of CS
+        length (count comment-symbol)]
+    ;; If index is negative, return nil
+    (when-not (neg? index)
+      ;; Otherwise, substring up to index
+      ;; plus CS
+      (.substring line (+ index length)))))
 
 (defn ensure-at-least-one-cs-in-line
   [comment-symbols line]
@@ -98,10 +98,18 @@ Example regex (with comment symbol //):
        (some (complement neg?))))
 
 (defn find-comment-in-line
-  [line]
-  line)
+  [comment-symbols comment-regexs line]
+  (when (ensure-at-least-one-cs-in-line comment-symbols line)
+    (if-let [comment (find-comment-using-regex comment-regexs line)]
+      comment
+      (->> comment-symbols
+           (map #(find-comment-using-split % line))
+           (drop-while nil?)
+           first))))
 
-;; (find-comment-in-line "test # comment # second")
+;; (ensure-at-least-one-cs-in-line ["#" "//"] "//  ")
+(find-comment-using-split "#" "//  ")
+(find-comment-in-line ["#" "//"] cs-regexs "//  ")
 
 ;; Main functions
 

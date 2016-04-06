@@ -27,15 +27,22 @@
       (fc-ur "'a#a' 'b#b' #comment") => "comment"
       (fc-ur "'a#a' 'b#b' #comment # and inner") => "comment # and inner")))
 
-(facts "about finding comments using split"
-  (let [fc-us (partial find-comment-using-split "#")]
-    (fact "one CS in line"
-      (fc-us "test #comment") => "comment"
-      (fc-us "#comment") => "comment")
-    (fact "multiple CS in line"
-      (fc-us "test #comment #with cs") => "comment #with cs")
-    (fact "different CS in line"
-      (fc-us "test #comment //with cs") => "comment //with cs")))
+(facts "about finding comment using split"
+  (let [fc-us-slash (partial find-comment-using-split "//")
+        fc-us-sharp (partial find-comment-using-split "#")]
+    (fact "there is no comment"
+      (fc-us-slash "") => nil
+      (fc-us-slash "#") => nil
+      (fc-us-sharp "") => nil
+      (fc-us-sharp "//  ") => nil
+      (fc-us-sharp "some word") => nil)
+    (fact "there is one CS in line"
+      (fc-us-slash "test //comment") => "comment"
+      (fc-us-slash "//comment") => "comment")
+    (fact "there is multiple CS in line"
+      (fc-us-slash "test //comment //with cs") => "comment //with cs")
+    (fact "there is different CS in line"
+      (fc-us-slash "test //comment #with cs") => "comment #with cs")))
 
 (facts "about ensuring line contains CS"
   (let [ensure (partial ensure-at-least-one-cs-in-line ["#" "//"])]
@@ -49,6 +56,25 @@
       (ensure "test #comment") => true
       (ensure "// all is comment") => true
       (ensure "many # CS // in one line") => true)))
+
+(facts "about finding comment in line"
+  (let [fc (partial find-comment-in-line ["#" "//"] cs-regexs)]
+    (fact "there is no comment in line"
+      (fc "") => nil
+      (fc "test") => nil
+      (fc "some $$ strange && symbols") => nil)
+    (fact "there is some comment in line"
+      (fc "#all string is comment!") => "all string is comment!"
+      ;; empty comment is still a comment ;)
+      (fc "#") => ""
+      (fc "'a#' # test") => " test"
+      ;; unclosed brackets
+      (fc "'a# # hooray") => " # hooray"
+      (fc "'a//' # test # some") => " test # some"
+      (fc "//  ") => "  "
+      (fc "// first # second") => " second"
+      (fc "# first // second") => " first // second"
+      )))
 
 (facts "about finding comments"
   #_(fact "multiple comments in a file"
