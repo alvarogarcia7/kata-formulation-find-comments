@@ -62,7 +62,8 @@
     (fact "there is no comment in line"
       (fc "") => nil
       (fc "test") => nil
-      (fc "some $$ strange && symbols") => nil)
+      (fc "some $$ strange && symbols") => nil
+      (fc "split('//');") => nil)
     (fact "there is some comment in line"
       (fc "#all string is comment!") => "all string is comment!"
       ;; empty comment is still a comment ;)

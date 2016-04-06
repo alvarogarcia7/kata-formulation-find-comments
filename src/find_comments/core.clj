@@ -19,7 +19,7 @@
 ;; 2) Apply all regexs on line, if one of it returns comment, return it
 ;; 3) Find index of first CS in line, then substring line starting at this index.
 
-(def comment-symbols ["#" "//" "--" ";;"])
+(def comment-symbols ["#" "//"])
 
 ;; Remarks: current implementation doesn't care case when comment consists of many CS
 ;; So for example for line "test // test # hooray" we will return " hooray",
@@ -122,8 +122,11 @@ Example regex (with comment symbol //):
     (->> rdr
          line-seq
          (map (partial find-comment-in-line comment-symbols cs-regexs))
+         (remove nil?)
          ;; need to materialize our lazy seq
          (into []))))
+
+
 
 (defn fix-broken-slash
   "Replaces windows backslash with unix slash."
