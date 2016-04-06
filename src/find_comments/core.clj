@@ -49,7 +49,7 @@ Example regex (with comment symbol //):
 
 (def cs-regexs (map create-regex comment-symbols))
 
-(defn apply-regex
+(defn find-comment-using-regex
   "Applies regex to line and returns comment, if found."
   [regex line]
   ;; re-matches returns nil in case of nothing found,
@@ -61,17 +61,6 @@ Example regex (with comment symbol //):
   ;; in vector.
   (when-let [[_ comment] (re-matches regex line)]
     comment))
-
-(defn find-comment-using-regex
-  [regexs line]
-  (->> regexs
-       ;; Let's make a lazy seq 
-       ;; of apply-regex results
-       (map #(apply-regex % line))
-       ;; Then drop all leading nil results...
-       (drop-while nil?)
-       ;; ... and take first (not nil)
-       first))
 
 ;; Split part of solution
 
@@ -87,6 +76,19 @@ Example regex (with comment symbol //):
       ;; plus CS
       (.substring line (+ index length)))))
 
+(defn apply-search-fn
+  "Maps patterns to (f pattern line) and returns first not nil result.
+  TODO: write tests!"
+  [f patterns line]
+  (->> patterns
+       ;; Let's make a lazy seq 
+       ;; of search results
+       (map #(f % line))
+       ;; Then drop all leading nil results...
+       (drop-while nil?)
+       ;; ... and take first (not nil)
+       first))
+
 (defn ensure-at-least-one-cs-in-line
   [comment-symbols line]
   (->> comment-symbols
@@ -99,17 +101,17 @@ Example regex (with comment symbol //):
 
 (defn find-comment-in-line
   [comment-symbols comment-regexs line]
+  ;; 1) Check that line has at least one CS, else return nil
   (when (ensure-at-least-one-cs-in-line comment-symbols line)
-    (if-let [comment (find-comment-using-regex comment-regexs line)]
-      comment
-      (->> comment-symbols
-           (map #(find-comment-using-split % line))
-           (drop-while nil?)
-           first))))
+    ;; 2) Apply all regexs on line, if one of it returns comment, return it
+    (if-let [by-regex (apply-search-fn find-comment-using-regex comment-regexs line)]
+      by-regex
+      ;; 3) Find index of first CS in line, then substring line starting at this index.
+      (apply-search-fn find-comment-using-split comment-symbols line))))
 
 ;; (ensure-at-least-one-cs-in-line ["#" "//"] "//  ")
-(find-comment-using-split "#" "//  ")
-(find-comment-in-line ["#" "//"] cs-regexs "//  ")
+;; (find-comment-using-split "#" "//  ")
+;; (find-comment-in-line ["#" "//"] cs-regexs "//  ")
 
 ;; Main functions
 
@@ -119,7 +121,7 @@ Example regex (with comment symbol //):
   (with-open [rdr (clojure.java.io/reader filename)]
     (->> rdr
          line-seq
-         ;; (map find-comment-in-line)
+         (map (partial find-comment-in-line comment-symbols cs-regexs))
          ;; need to materialize our lazy seq
          (into []))))
 

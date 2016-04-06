@@ -10,7 +10,7 @@
   false => false))
 
 (facts "about finding comments using regex"
-  (let [fc-ur (partial find-comment-using-regex cs-regexs)]
+  (let [fc-ur (partial find-comment-using-regex (create-regex "#"))]
     (fact "without quotes or without trailing comment symbol returns nil"
       (fc-ur " # test") => nil
       (fc-ur "") => nil
