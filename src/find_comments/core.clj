@@ -34,40 +34,36 @@
   [s]
   (some #(.startsWith % s) comment-symbols))
 
-(defprotocol FsmState
-  (step-quote [this ch])
-  (step-cs [this ch])
-  (step-cs-beginning [this ch]))
+(defrecord State [quotes comment-symbol comment])
 
-(defrecord Comment [quote comment]
-  FsmState
-  (step-quote [this ch]))
+(def start-state (->State #{} "" ""))
 
-(defrecord CommentSymbolBeginning [quote cs]
-  FsmState
-  (step-quote [this ch]
-    this))
+(defn step-quote
+  [quotes ch]
+  (let [q #{ch}]
+    (if (some q quotes)
+      (remove q quotes)
+      (conj quotes ch))))
 
-(defrecord Code [quote]
-  FsmState
-  (step-quote [this ch]
-    (let [q (when-not (= quote ch) ch)]
-      (->Code q)))
-  (step-cs [this s]
-    (->Comment quote ""))
-  (step-cs-beginning [this s]
-    (->CommentSymbolBeginning quote s)))
+;; (reduce step start-state (seq "\"\""))
 
-(reduce step (->Code nil) (seq "'"))
+(defn step-cs
+  [state s]
+  state)
+
+(defn step-else
+  [state s]
+  state)
 
 (defn step 
   [state ch]
   (let [s (str ch)]
     (cond
-      (is-quote? ch) (step-quote state ch)
+      (is-quote? ch) (update-in state [:quotes] step-quote ch)
       (is-cs? s) (step-cs state s)
-      (is-cs-beginning? s) (step-cs-beginning state s)
-      :else state)))
+      :else (step-else state s))))
+
+;; (reduce step () (seq ""))
 
 ;; (step (->Start) \#)
 
