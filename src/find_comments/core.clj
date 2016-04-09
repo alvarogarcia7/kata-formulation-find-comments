@@ -48,51 +48,65 @@
 ;; quote -- nil or one of quotation symbols. If set to nil, parser is outside quotes, otherwise inside quotes.
 ;; cs -- part of comment symbol, used to parse CS of length more than one character.
 ;; comment-found -- true or false.
-(defrecord State [index quote cs comment-found])
 
-(def start-state (->State 0 nil nil false))
+(defprotocol FsmState
+  (step [this ch])
+  (result [this]))
 
-;; Helper to deal with quotes
-(defn step-quote
-  "Only used when parser is inside quotes. If current open quote equals input character,
-  returns nil (outside quotes). Otherwise stay inside quotes."
-  [quote ch]
-  ;; when-not seems more unclear than if
-  ;; in current context
-  (if (= quote ch) 
-    nil 
-    quote))
+(declare ->InsideQuotes ->CommentBeginningFound)
 
-(defn step
-  [{:keys [index quote cs] :as state} ch]
-  ;; some bindings
-  (let [;; Concat current cs and input char
-        s (str cs ch)
-        ;; Always increment index
-        next-state (update-in state [:index] inc)]
+(defrecord CommentFound [comment-part]
+  FsmState
+  (step [this ch]
+    (update-in this [:comment-part] str ch))
+  (result [this] comment-part))
+
+(defrecord OutsideQuotes []
+  FsmState
+  (step [this ch]
     (cond
-      ;; If parser is inside quotes, update quote state
-      quote (update-in next-state [:quote] step-quote ch)
-      ;; Otherwise...
       ;; If input char is quote, change state to inside quotes
-      (is-quote? ch) (assoc next-state :quote ch)
+      (is-quote? ch) (->InsideQuotes ch)
       ;; If input char with current cs is CS, immideatly finish reduce
       ;; (god bless 'reduced' fn :) )
-      (is-cs? s) (reduced (assoc state :comment-found true))
+      (is-cs? (str ch)) (->CommentFound "")
       ;; If input char is leading char of one of CS, update cs
-      (is-cs-beginning? s) (assoc-in next-state [:cs] s)
+      (is-cs-beginning? (str ch)) (->CommentBeginningFound (str ch))
       ;; If nothing interesting, simply go to next character
-      :else next-state)))
+      :else this))
+  (result [this] nil))
+
+(defrecord InsideQuotes [quote]
+  FsmState
+  (step [this ch]
+    (if (= quote ch)
+      (->OutsideQuotes)
+      this))
+  (result [this] nil))
+
+(defrecord CommentBeginningFound [cs]
+  FsmState
+  (step [this ch]
+    (let [s (str cs ch)]
+      (cond
+        ;; If input char is quote, change state to inside quotes
+        (is-quote? ch) (->InsideQuotes ch)
+        ;; If input char with current cs is CS, immideatly finish reduce
+        ;; (god bless 'reduced' fn :) )
+        (is-cs? s) (->CommentFound "")
+        ;; If input char is leading char of one of CS, update cs
+        (is-cs-beginning? s) (->CommentBeginningFound s)
+        ;; If nothing interesting, simply go to next character
+        :else (->OutsideQuotes))))
+  (result [this] nil))
 
 (defn find-comment-in-line
   [comment-symbols line]
-  ;; Check that line has at least one CS, else return nil
-  (let [{:keys [index comment-found]} (reduce step start-state (seq line))]
-    ;; If comment found...
-    (when comment-found
-      ;; ... cut it from string
-      (.substring line (inc index)))))
-
+  ;; Reduce line (seq of chars)
+  (let [final-state (reduce step (->OutsideQuotes) (seq line))]
+    ;; If comment found, return it
+    (when-let [comment-part (result final-state)]
+      comment-part)))
 
 ;; Main functions
 
