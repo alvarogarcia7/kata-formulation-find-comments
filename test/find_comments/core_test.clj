@@ -1,6 +1,6 @@
 (ns find-comments.core-test
   (:use midje.sweet
-          find-comments.core))
+        find-comments.core))
 
 (facts "canary tests"
   (fact "truthiness"
@@ -8,20 +8,6 @@
   
   (fact "falsiness"
   false => false))
-
- 
-(facts "about ensuring line contains CS"
-  (let [ensure (partial ensure-at-least-one-cs-in-line ["#" "//"])]
-    (fact "there is no CS in line"
-      (ensure "") => nil
-      (ensure "test") => nil
-      (ensure "more than one word") => nil
-      (ensure "only one slash /") => nil)
-    (fact "there is a CS in line"
-      (ensure "#") => true
-      (ensure "test #comment") => true
-      (ensure "// all is comment") => true
-      (ensure "many # CS // in one line") => true)))
 
 (facts "about finding comment in line"
   (let [fc (partial find-comment-in-line ["#" "//"])]
