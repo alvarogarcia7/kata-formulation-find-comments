@@ -21,6 +21,56 @@
 
 (def comment-symbols ["#" "//"])
 
+
+(defn is-quote?
+  [ch]
+  (some #{ch} [\' \"]))
+
+(defn is-cs?
+  [s]
+  (some #{s} comment-symbols))
+
+(defn is-cs-beginning?
+  [s]
+  (some #(.startsWith % s) comment-symbols))
+
+(defprotocol FsmState
+  (step-quote [this ch])
+  (step-cs [this ch])
+  (step-cs-beginning [this ch]))
+
+(defrecord Comment [quote comment]
+  FsmState
+  (step-quote [this ch]))
+
+(defrecord CommentSymbolBeginning [quote cs]
+  FsmState
+  (step-quote [this ch]
+    this))
+
+(defrecord Code [quote]
+  FsmState
+  (step-quote [this ch]
+    (let [q (when-not (= quote ch) ch)]
+      (->Code q)))
+  (step-cs [this s]
+    (->Comment quote ""))
+  (step-cs-beginning [this s]
+    (->CommentSymbolBeginning quote s)))
+
+(reduce step (->Code nil) (seq "'"))
+
+(defn step 
+  [state ch]
+  (let [s (str ch)]
+    (cond
+      (is-quote? ch) (step-quote state ch)
+      (is-cs? s) (step-cs state s)
+      (is-cs-beginning? s) (step-cs-beginning state s)
+      :else state)))
+
+;; (step (->Start) \#)
+
 ;; Remarks: current implementation doesn't care case when comment consists of many CS
 ;; So for example for line "test // test # hooray" we will return " hooray",
 ;; beacuse # CS was declared before // CS.
