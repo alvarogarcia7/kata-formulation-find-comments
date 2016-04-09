@@ -26,23 +26,36 @@
 (def comment-symbols ["#" "//"])
 (def quotes-symbols [\' \"])
 
+;; Helpers
+
 (defn is-quote?
+  "Checks that character is a quotation symbol."
   [ch]
   (some #{ch} quotes-symbols))
 
 (defn is-cs?
+  "Checks that string is a CS."
   [s]
   (some #{s} comment-symbols))
 
 (defn is-cs-beginning?
+  "Checks that string is leading substring of one of CS."
   [s]
   (some #(.startsWith % s) comment-symbols))
 
+;; Our state for reduce line:
+;; index -- current index in line
+;; quote -- nil or one of quotation symbols. If set to nil, parser is outside quotes, otherwise inside quotes.
+;; cs -- part of comment symbol, used to parse CS of length more than one character.
+;; comment-found -- true or false.
 (defrecord State [index quote cs comment-found])
 
 (def start-state (->State 0 nil nil false))
 
-(defn step-quote 
+;; Helper to deal with quotes
+(defn step-quote
+  "Only used when parser is inside quotes. If current open quote equals input character,
+  returns nil (outside quotes). Otherwise stay inside quotes."
   [quote ch]
   ;; when-not seems more unclear than if
   ;; in current context
@@ -50,42 +63,36 @@
     nil 
     quote))
 
-(defn step 
+(defn step
   [{:keys [index quote cs] :as state} ch]
-  (let [s (str ch)
+  ;; some bindings
+  (let [;; Concat current cs and input char
+        s (str cs ch)
+        ;; Always increment index
         next-state (update-in state [:index] inc)]
     (cond
+      ;; If parser is inside quotes, update quote state
       quote (update-in next-state [:quote] step-quote ch)
+      ;; Otherwise...
+      ;; If input char is quote, change state to inside quotes
       (is-quote? ch) (assoc next-state :quote ch)
-      (or (is-cs? s) (is-cs? (str cs s))) (reduced (assoc state :comment-found true))
-      (is-cs-beginning? (str cs s)) (assoc-in next-state [:cs] (str cs s))
+      ;; If input char with current cs is CS, immideatly finish reduce
+      ;; (god bless 'reduced' fn :) )
+      (is-cs? s) (reduced (assoc state :comment-found true))
+      ;; If input char is leading char of one of CS, update cs
+      (is-cs-beginning? s) (assoc-in next-state [:cs] s)
+      ;; If nothing interesting, simply go to next character
       :else next-state)))
-
-(reduce step start-state (seq "//1"))
-
-;; (step (->Start) \#)
-
-;; Remarks: current implementation doesn't care case when comment consists of many CS
-;; So for example for line "test // test # hooray" we will return " hooray",
-;; beacuse # CS was declared before // CS.
-
-(defn ensure-at-least-one-cs-in-line
-  [comment-symbols line]
-  (->> comment-symbols
-       ;; For each CS get it index in line
-       (map #(.indexOf line %))
-       ;; Some not negative,
-       ;; pos? doesn't work cause of 
-       ;; (= (pos? 0) false)
-       (some (complement neg?))))
 
 (defn find-comment-in-line
   [comment-symbols line]
-  ;; 1) Check that line has at least one CS, else return nil
-  (when (ensure-at-least-one-cs-in-line comment-symbols line)
-    (let [{:keys [index comment-found]} (reduce step start-state (seq line))]
-      (when comment-found
-        (.substring line (inc index))))))
+  ;; Check that line has at least one CS, else return nil
+  (let [{:keys [index comment-found]} (reduce step start-state (seq line))]
+    ;; If comment found...
+    (when comment-found
+      ;; ... cut it from string
+      (.substring line (inc index)))))
+
 
 ;; Main functions
 
@@ -95,9 +102,14 @@
   (with-open [rdr (clojure.java.io/reader filename)]
     (->> rdr
          line-seq
+         ;; Here we implicitly using global symbol
+         ;; 'comment-symbols', which is not good.
+         ;; But in current task it's okay.
+         ;; (also 'comment-symbols' used in helpers fns)
          (map (partial find-comment-in-line comment-symbols))
+         ;; Remove all lines whithout comments
          (remove nil?)
-         ;; need to materialize our lazy seq
+         ;; Materialize our lazy seq before closing reader
          (into []))))
 
 

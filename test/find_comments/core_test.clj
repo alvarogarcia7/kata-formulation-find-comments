@@ -29,7 +29,8 @@
       (fc "") => nil
       (fc "test") => nil
       (fc "some $$ strange && symbols") => nil
-      (fc "split('//');") => nil)
+      (fc "split('//');") => nil
+      (fc "/1/2/3/4") => nil)
     (fact "there is some comment in line"
       (fc "#all string is comment!") => "all string is comment!"
       ;; empty comment is still a comment ;)
