@@ -9,15 +9,8 @@
 ;; -------------------------------------------------------------------------
 
 ;; Main idea of how to find comment in line:
-;; We have two different cases when comment exists.
-;; 1) Simple case, when there is no bracketed CS.
-;; 2) Not simple case, when there is one or more bracketed CS. 
-;; At second case we need to apply some regex that will find comment.
-
-;; So our algorithm will be:
-;; 1) Check that line has at least one CS, else return nil
-;; 2) Apply all regexs on line, if one of it returns comment, return it
-;; 3) Find index of first CS in line, then substring line starting at this index.
+;; Reduce line as seq of chars. Reduce state is a record which implements FsmState protocol.
+;; See finite state machine scheme in fsm-schema.png file.
 
 ;; Some rules:
 ;; 1) Quotes and CS can't be same
@@ -43,60 +36,55 @@
   [s]
   (some #(.startsWith % s) comment-symbols))
 
-;; Our state for reduce line:
-;; index -- current index in line
-;; quote -- nil or one of quotation symbols. If set to nil, parser is outside quotes, otherwise inside quotes.
-;; cs -- part of comment symbol, used to parse CS of length more than one character.
-;; comment-found -- true or false.
-
 (defprotocol FsmState
+  "Describes finite state machine state. 
+  We can go to next state ('step') and get result from state (comment or nil)."
   (step [this ch])
   (result [this]))
 
 (declare ->InsideQuotes ->CommentBeginningFound)
 
+;; The most simple state.
 (defrecord CommentFound [comment-part]
   FsmState
+  ;; Simply concat chars to comment-part
   (step [this ch]
     (update-in this [:comment-part] str ch))
+  ;; Return comment-part
   (result [this] comment-part))
 
+;; 'Main' state.
 (defrecord OutsideQuotes []
   FsmState
   (step [this ch]
     (cond
-      ;; If input char is quote, change state to inside quotes
       (is-quote? ch) (->InsideQuotes ch)
-      ;; If input char with current cs is CS, immideatly finish reduce
-      ;; (god bless 'reduced' fn :) )
       (is-cs? (str ch)) (->CommentFound "")
-      ;; If input char is leading char of one of CS, update cs
       (is-cs-beginning? (str ch)) (->CommentBeginningFound (str ch))
-      ;; If nothing interesting, simply go to next character
       :else this))
   (result [this] nil))
 
 (defrecord InsideQuotes [quote]
   FsmState
   (step [this ch]
+    ;; If input char is equal to our quote, go back outside.
+    ;; Otherwise ignore all :)
     (if (= quote ch)
       (->OutsideQuotes)
       this))
   (result [this] nil))
 
+;; Very similar to OutsideQuotes
 (defrecord CommentBeginningFound [cs]
   FsmState
   (step [this ch]
+    ;; Let concat current leading CS substring with next input char
     (let [s (str cs ch)]
       (cond
-        ;; If input char is quote, change state to inside quotes
+        ;; forget about DRY for next two lines of code :)
         (is-quote? ch) (->InsideQuotes ch)
-        ;; If input char with current cs is CS, immideatly finish reduce
-        ;; (god bless 'reduced' fn :) )
         (is-cs? s) (->CommentFound "")
-        ;; If input char is leading char of one of CS, update cs
         (is-cs-beginning? s) (->CommentBeginningFound s)
-        ;; If nothing interesting, simply go to next character
         :else (->OutsideQuotes))))
   (result [this] nil))
 
