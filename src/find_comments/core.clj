@@ -8,10 +8,6 @@
 ;; | comment symbol | CS | string, after that in line starts comment
 ;; -------------------------------------------------------------------------
 
-;; Main idea of how to find comment in line:
-;; Reduce line as seq of chars. Reduce state is a record which implements FsmState protocol.
-;; See finite state machine scheme in fsm-schema.png file.
-
 ;; Some rules:
 ;; 1) Quotes and CS can't be same
 ;; 2) One CS can't be substring of another
@@ -26,75 +22,38 @@
   [ch]
   (some #{ch} quotes-symbols))
 
-(defn is-cs?
-  "Checks that string is a CS."
+(defn cut-cs
+  "If s starts with comment, cuts CS and returns remain string.
+ Otherwise returns nil."
   [s]
-  (some #{s} comment-symbols))
+  (some #(when (.startsWith s %) (.substring s (count %))) comment-symbols))
 
-(defn is-cs-beginning?
-  "Checks that string is leading substring of one of CS."
-  [s]
-  (some #(.startsWith % s) comment-symbols))
-
-(defprotocol FsmState
-  "Describes finite state machine state. 
-  We can go to next state ('step') and get result from state (comment or nil)."
-  (step [this ch])
-  (result [this]))
-
-(declare ->InsideQuotes ->CommentBeginningFound)
-
-;; The most simple state.
-(defrecord CommentFound [comment-part]
-  FsmState
-  ;; Simply concat chars to comment-part
-  (step [this ch]
-    (update-in this [:comment-part] str ch))
-  ;; Return comment-part
-  (result [this] comment-part))
-
-;; 'Main' state.
-(defrecord OutsideQuotes []
-  FsmState
-  (step [this ch]
-    (cond
-      (is-quote? ch) (->InsideQuotes ch)
-      (is-cs? (str ch)) (->CommentFound "")
-      (is-cs-beginning? (str ch)) (->CommentBeginningFound (str ch))
-      :else this))
-  (result [this] nil))
-
-(defrecord InsideQuotes [quote]
-  FsmState
-  (step [this ch]
-    ;; If input char is equal to our quote, go back outside.
-    ;; Otherwise ignore all :)
-    (if (= quote ch)
-      (->OutsideQuotes)
-      this))
-  (result [this] nil))
-
-;; Very similar to OutsideQuotes
-(defrecord CommentBeginningFound [cs]
-  FsmState
-  (step [this ch]
-    ;; Let concat current leading CS substring with next input char
-    (let [s (str cs ch)]
+(defn find-comment-in-line*
+  "quote is nil if parser outside quotes, or quote symbol if inside"
+  [quote line]
+  ;; return nil if line is blank
+  (when-not (s/blank? line)
+    ;; get first char and rest of line
+    (let [ch (first line)
+          r (.substring line 1)]
       (cond
-        ;; forget about DRY for next two lines of code :)
-        (is-quote? ch) (->InsideQuotes ch)
-        (is-cs? s) (->CommentFound "")
-        (is-cs-beginning? s) (->CommentBeginningFound s)
-        :else (->OutsideQuotes))))
-  (result [this] nil))
+        ;; if parser is inside quotes, check if first char is same quote
+        quote (if (= quote ch)
+                ;; then go outside quotes...
+                (recur nil r)
+                ;; ... or stay in quotes
+                (recur quote r))
+        ;; if parser is outside quotes,
+        ;; and it found quote, go inside :)
+        (is-quote? ch) (recur ch r)
+        ;; else check, maybe we found comment
+        :else (if-let [comm (cut-cs line)]
+                comm
+                (recur nil r))))))
 
 (defn find-comment-in-line
-  [comment-symbols line]
-  ;; Reduce line (seq of chars)
-  (let [final-state (reduce step (->OutsideQuotes) (seq line))]
-    ;; If comment found, return it
-    (when-let [comment-part (result final-state)]
-      comment-part)))
+  [line]
+  (find-comment-in-line* nil line))
 
 ;; Main functions
 
@@ -104,11 +63,7 @@
   (with-open [rdr (clojure.java.io/reader filename)]
     (->> rdr
          line-seq
-         ;; Here we implicitly using global symbol
-         ;; 'comment-symbols', which is not good.
-         ;; But in current task it's okay.
-         ;; (also 'comment-symbols' used in helpers fns)
-         (map (partial find-comment-in-line comment-symbols))
+         (map find-comment-in-line)
          ;; Remove all lines whithout comments
          (remove nil?)
          ;; Materialize our lazy seq before closing reader
