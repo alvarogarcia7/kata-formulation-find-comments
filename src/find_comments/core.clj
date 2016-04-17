@@ -1,6 +1,6 @@
 ;; A version from an imperative programmer:)
 
-;; I was in pair with @sherpc on a metup and
+;; I was in pair with @sherpc on a meetup and
 ;; this version was inspired by his FSM version, which seemed a bit complicated
 
 ;; It borrows heavily on files analysis part of his version, but in string parsing (find-comment-in-line) is genuine
@@ -12,7 +12,7 @@
 ;; parameters) and not to a function definition, thus I have to use suboptimal function calls where simple recur
 ;; would do.
 
-;; @sherpc use nullabe argument to make "recur" work, but it requires a helper function and IMO is not nice.
+;; @sherpc use nullable argument to make "recur" work, but it requires a helper function and IMO is not nice.
 
 ;; Can not see any reason why Clojure reader can not recur to an overloaded function.
 
