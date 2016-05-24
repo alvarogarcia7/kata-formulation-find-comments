@@ -1,5 +1,4 @@
-(ns find-comments.core
-  (:require [clojure.string :as s]))
+(ns find-comments.core)
 
 ;; Small ubiquitous language dictionary:
 ;; -------------------------------------------------------------------------
@@ -12,8 +11,7 @@
 ;; 1) Quotes and CS can't be same
 ;; 2) One CS can't be substring of another
 
-(defn find-comment-in-line
-  [line]
+(defn find-comment-in-line [line]
   'fix-me)
 
 ;; Main functions
