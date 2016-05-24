@@ -46,31 +46,18 @@ As an optional task, when the problem is finished (you can attack in your prefer
 
 
 [formulation]: https://github.com/alvarogarcia7/kata-formulation-find-comments
-[running-tests]: https://github.com/alvarogarcia7/cli-app-base-clojure/blob/master/README.md#tests
-
-
+[running-tests]: https://github.com/sherpc/kata-formulation-find-comments/blob/master/README.md#tests
 
 This section is a copy [from here](http://alvarogarcia7.github.io/blog/2016/03/01/kata-formulation-find-comments/). [Raw source](https://github.com/alvarogarcia7/blog_source/blob/source/source/_posts/2016-03-01-kata-formulation-find-comments.markdown)
 
 ## Tests
 
-This section is a copy [from here](https://github.com/alvarogarcia7/cli-app-base-clojure/blob/master/README.md#tests)
-
 ### Testing from the CLI
 
-``lein midje :autotest``
+``lein autoexpect :notify :change-only``
 
 This has the advantage that loads everything, each time.
 
 ### Testing inside the REPL
 
-```bash
-lein repl
-```
-
-```clojure
-(use 'midje.repl)
-(autotest)
-```
-
-This has the advantage that is faster.
+Easy way currently unavailable.
