@@ -1,4 +1,4 @@
-# Find the comments kata
+# 'Find the comments' kata
 
 This a formulation for your practice
 
