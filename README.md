@@ -29,7 +29,7 @@ You can do this kata in any language you want. In any case it is not allowed to 
 
   * Clone/fork (any stars are welcome) [this repo][formulation]
   * Run the tests. [See this][running-tests] for help
-  * They should be red.
+  * They should be red
   * Go to production code and fix it
   * Have fun (happy kata and happy koding!)
 
